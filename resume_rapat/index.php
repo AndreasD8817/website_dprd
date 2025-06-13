@@ -107,7 +107,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Komisi A">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Komisi A" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Komisi A">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Komisi A"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi A'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
 
@@ -116,7 +117,9 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Komisi B">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Komisi B" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Komisi B">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Komisi B"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi B'); ?>" class="card-link">Lihat Resume</a>
+                
             </div>
         </div>
 
@@ -125,7 +128,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Komisi C">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Komisi C" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Komisi C">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Komisi C"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi C'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
 
@@ -134,7 +138,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Komisi D">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Komisi D" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Komisi D">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Komisi D"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi D'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
 
@@ -143,7 +148,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Rapat Pimpinan">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Rapat Pimpinan" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Rapat Pimpinan">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Rapat Pimpinan"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Rapat Pimpinan'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
 
@@ -152,7 +158,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Badan Anggaran">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Badan Anggaran" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Badan Anggaran">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Badan Anggaran"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Badan Anggaran'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
 
@@ -161,7 +168,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Badan Musyawarah">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Badan Musyawarah" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Badan Musyawarah">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Badan Musyawarah"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Badan Musyawarah'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
 
@@ -170,7 +178,8 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
             <div class="action-buttons">
                 <a href="input_resume.php?kategori=Paripurna">Input Resume</a>
                 <a href="daftar_hadir.php?kategori=Paripurna" class="hadir-button">Daftar Hadir</a>
-                <a href="view_resume.php?kategori=Paripurna">Lihat Resume</a>
+                <!-- <a href="view_resume.php?kategori=Paripurna"class="card-link">Lihat Resume</a> -->
+                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Paripurna'); ?>" class="card-link">Lihat Resume</a>
             </div>
         </div>
     </div>

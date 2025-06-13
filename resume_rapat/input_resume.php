@@ -12,9 +12,10 @@ $waktu_selesai_form = '';
 $tempat_form = '';
 $kegiatan_form = '';
 $kesimpulan_form = '';
-$nomor_agenda_form_selected_id = ''; // Baru: untuk mengembalikan ID agenda terpilih jika validasi gagal
-$perihal_agenda_form = ''; // Untuk mengembalikan nilai perihal jika validasi gagal
-$nomor_agenda_form_text = ''; // Untuk mengembalikan nilai nomor agenda jika validasi gagal
+$nomor_agenda_form_selected_id = ''; // ID agenda terpilih (dari agenda_rapat)
+$perihal_agenda_form = '';
+$nomor_agenda_form_text = '';
+$id_resume_to_edit = isset($_GET['id']) ? htmlspecialchars($_GET['id']) : null; // Mendapatkan ID resume jika dalam mode edit
 
 $message = ''; // Variabel untuk pesan sukses/error
 
@@ -36,72 +37,128 @@ if ($result_dates->num_rows > 0) {
 }
 $stmt_dates->close();
 
+// --- LOGIKA UNTUK MODE EDIT (Mengambil data resume yang sudah ada) ---
+// Blok ini harus ada dan berfungsi sebelum proses POST
+if ($id_resume_to_edit) {
+    $stmt_edit = $conn->prepare("
+        SELECT
+            rr.tanggal_agenda,
+            rr.waktu_mulai,
+            rr.waktu_selesai,
+            rr.tempat,
+            rr.kegiatan,
+            rr.kesimpulan,
+            rr.id_agenda, -- Ambil id_agenda untuk pre-select dropdown
+            ar.nomor_undangan,
+            ar.perihal
+        FROM
+            resume_rapat rr
+        LEFT JOIN
+            agenda_rapat ar ON rr.id_agenda = ar.id
+        WHERE
+            rr.id = ? AND rr.kategori_rapat = ?
+    ");
+    $stmt_edit->bind_param("is", $id_resume_to_edit, $kategori_rapat_url);
+    $stmt_edit->execute();
+    $result_edit = $stmt_edit->get_result();
+
+    if ($result_edit->num_rows > 0) {
+        $resume_data = $result_edit->fetch_assoc();
+        // Isi variabel form dengan data dari database
+        $tanggal_agenda_form = $resume_data['tanggal_agenda'];
+        $waktu_mulai_form = $resume_data['waktu_mulai'];
+        $waktu_selesai_form = $resume_data['waktu_selesai'];
+        $tempat_form = $resume_data['tempat'];
+        $kegiatan_form = $resume_data['kegiatan'];
+        $kesimpulan_form = $resume_data['kesimpulan']; // Konten TinyMCE
+        $nomor_agenda_form_selected_id = $resume_data['id_agenda']; // Untuk pre-select dropdown
+        $nomor_agenda_form_text = $resume_data['nomor_undangan']; // Untuk ditampilkan
+        $perihal_agenda_form = $resume_data['perihal']; // Untuk ditampilkan
+    } else {
+        $message = '<div class="message error">Resume tidak ditemukan atau kategori tidak cocok!</div>';
+        $id_resume_to_edit = null; // Reset agar tidak masuk mode update
+    }
+    $stmt_edit->close();
+}
+
+
 // --- PROSES FORM SUBMISSION ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Ambil data dari form yang disubmit
     $kategori_rapat_submitted = htmlspecialchars(trim($_POST['kategori_rapat']));
-    // Sekarang kita mengambil ID agenda yang dipilih dari dropdown Nomor Agenda
-    $id_agenda_selected_submitted = htmlspecialchars(trim($_POST['nomor_agenda_selected_id'])); // Perhatikan name yang baru
-
+    $id_agenda_selected_submitted = htmlspecialchars(trim($_POST['nomor_agenda_selected_id']));
     $tanggal_agenda_submitted = htmlspecialchars(trim($_POST['tanggal_agenda_selected']));
-    $waktu_mulai_submitted = htmlspecialchars(trim($_POST['waktu_mulai'])); // Jam mulai (readonly, diambil dari DB)
-    $waktu_selesai_submitted = htmlspecialchars(trim($_POST['waktu_selesai'])); // Jam selesai (manual input)
+    $waktu_mulai_submitted = htmlspecialchars(trim($_POST['waktu_mulai']));
+    $waktu_selesai_submitted = htmlspecialchars(trim($_POST['waktu_selesai']));
     $tempat_submitted = htmlspecialchars(trim($_POST['tempat']));
     $kegiatan_submitted = htmlspecialchars(trim($_POST['kegiatan']));
-    $kesimpulan_submitted = $_POST['kesimpulan']; // Konten TinyMCE
+    $kesimpulan_submitted = $_POST['kesimpulan'];
+    
+    // Ambil ID resume jika dalam mode UPDATE (dari input hidden yang baru kita tambahkan)
+    $submitted_resume_id = isset($_POST['resume_id']) ? htmlspecialchars(trim($_POST['resume_id'])) : null;
 
     // Untuk mengembalikan nilai ke form jika validasi gagal
-    $nomor_agenda_selected_text_submitted = htmlspecialchars(trim($_POST['nomor_agenda_display'])); // Ambil teks dari input readonly
-    $perihal_agenda_selected_submitted = htmlspecialchars(trim($_POST['perihal_agenda_display'])); // Ambil teks dari input readonly
+    $nomor_agenda_selected_text_submitted = htmlspecialchars(trim($_POST['nomor_agenda_display_hidden'])); // Dari hidden input
+    $perihal_agenda_selected_submitted = htmlspecialchars(trim($_POST['perihal_agenda_display'])); // Dari input perihal agenda
 
-
-    // Validasi input wajib. Pastikan semua field penting terisi.
+    // Validasi input wajib
     if (empty($id_agenda_selected_submitted) || empty($tanggal_agenda_submitted) || empty($waktu_mulai_submitted) || empty($waktu_selesai_submitted) || empty($tempat_submitted) || empty($kegiatan_submitted) || empty($kesimpulan_submitted)) {
         $message = '<div class="message error">Semua kolom wajib diisi!</div>';
 
         // Kembalikan nilai ke form agar tidak hilang saat validasi gagal
         $tanggal_agenda_form = $tanggal_agenda_submitted;
-        $nomor_agenda_form_selected_id = $id_agenda_selected_submitted; // ID yang dipilih
-        $nomor_agenda_form_text = $nomor_agenda_selected_text_submitted; // Teks Nomor Agenda
-        $perihal_agenda_form = $perihal_agenda_selected_submitted; // Teks Perihal Agenda
+        $nomor_agenda_form_selected_id = $id_agenda_selected_submitted;
+        $nomor_agenda_form_text = $nomor_agenda_selected_text_submitted; // Penting untuk mengisi kembali teks Nomor
+        $perihal_agenda_form = $perihal_agenda_selected_submitted; // Penting untuk mengisi kembali teks Perihal
         $waktu_mulai_form = $waktu_mulai_submitted;
         $waktu_selesai_form = $waktu_selesai_submitted;
         $tempat_form = $tempat_submitted;
         $kegiatan_form = $kegiatan_submitted;
         $kesimpulan_form = $kesimpulan_submitted;
+        $id_resume_to_edit = $submitted_resume_id; // Penting: jaga ID resume jika validasi gagal di mode edit
 
     } else {
-        // Persiapkan query INSERT ke tabel resume_rapat
-        // Kolom id_agenda akan menyimpan ID dari agenda_rapat yang dipilih
-        $stmt_insert = $conn->prepare("INSERT INTO resume_rapat (id_agenda, kategori_rapat, tanggal_agenda, waktu_mulai, waktu_selesai, tempat, kegiatan, kesimpulan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt_insert->bind_param("isssssss",
-            $id_agenda_selected_submitted,
-            $kategori_rapat_submitted,
-            $tanggal_agenda_submitted,
-            $waktu_mulai_submitted,
-            $waktu_selesai_submitted,
-            $tempat_submitted,
-            $kegiatan_submitted,
-            $kesimpulan_submitted
-        );
-
-        // Eksekusi query
-        if ($stmt_insert->execute()) {
-            $message = '<div class="message success">Resume rapat berhasil disimpan!</div>';
-            // Kosongkan form setelah sukses untuk input baru
-            $tanggal_agenda_form = '';
-            $waktu_mulai_form = '';
-            $waktu_selesai_form = '';
-            $tempat_form = '';
-            $kegiatan_form = '';
-            $kesimpulan_form = '';
-            $nomor_agenda_form_selected_id = '';
-            $perihal_agenda_form = '';
-            $nomor_agenda_form_text = '';
-        } else {
-            $message = '<div class="message error">Error: ' . $stmt_insert->error . '</div>';
+        // Mode INSERT atau UPDATE
+        if ($submitted_resume_id) { // Jika ada resume_id, berarti UPDATE
+            $stmt_action = $conn->prepare("UPDATE resume_rapat SET id_agenda = ?, kategori_rapat = ?, tanggal_agenda = ?, waktu_mulai = ?, waktu_selesai = ?, tempat = ?, kegiatan = ?, kesimpulan = ? WHERE id = ? AND kategori_rapat = ?");
+            $stmt_action->bind_param("isssssssis",
+                $id_agenda_selected_submitted,
+                $kategori_rapat_submitted,
+                $tanggal_agenda_submitted,
+                $waktu_mulai_submitted,
+                $waktu_selesai_submitted,
+                $tempat_submitted,
+                $kegiatan_submitted,
+                $kesimpulan_submitted,
+                $submitted_resume_id, // ID untuk WHERE clause
+                $kategori_rapat_submitted // Kategori untuk WHERE clause
+            );
+        } else { // Jika tidak ada resume_id, berarti INSERT baru
+            $stmt_action = $conn->prepare("INSERT INTO resume_rapat (id_agenda, kategori_rapat, tanggal_agenda, waktu_mulai, waktu_selesai, tempat, kegiatan, kesimpulan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt_action->bind_param("isssssss",
+                $id_agenda_selected_submitted,
+                $kategori_rapat_submitted,
+                $tanggal_agenda_submitted,
+                $waktu_mulai_submitted,
+                $waktu_selesai_submitted,
+                $tempat_submitted,
+                $kegiatan_submitted,
+                $kesimpulan_submitted
+            );
         }
-        $stmt_insert->close();
+        
+        // Eksekusi query
+        if ($stmt_action->execute()) {
+            $message = '<div class="message success">Resume rapat berhasil ' . ($submitted_resume_id ? 'diperbarui' : 'disimpan') . '!</div>';
+            // Setelah sukses, kita ingin kembali ke halaman daftar resume
+            header("Location: view_resume_by_category.php?kategori=" . rawurlencode($kategori_rapat_submitted) . "&status=" . ($submitted_resume_id ? 'updated' : 'added'));
+            exit();
+        } else {
+            $message = '<div class="message error">Error: ' . $stmt_action->error . '</div>';
+            // Jika error, pastikan ID resume tetap ada jika dalam mode edit
+            $id_resume_to_edit = $submitted_resume_id; 
+        }
+        $stmt_action->close();
     }
 }
 
@@ -111,7 +168,7 @@ if (isset($conn) && $conn instanceof mysqli) {
 }
 
 // Set judul halaman yang akan ditampilkan di tab browser
-$page_title = "Tulis Notulensi Rapat " . $kategori_rapat_url . " - DPRD Kota Surabaya";
+$page_title = ($id_resume_to_edit ? "Edit Notulensi Rapat" : "Tulis Notulensi Rapat") . " " . $kategori_rapat_url . " - DPRD Kota Surabaya";
 
 // Sertakan header global website
 include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes/
@@ -245,11 +302,14 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
 </style>
 
 <div class="resume-input-container">
-    <h2>Tulis Notulensi Rapat <?php echo $kategori_rapat_url; ?></h2>
+    <h2><?php echo ($id_resume_to_edit ? "Edit Notulensi Rapat" : "Tulis Notulensi Rapat") . " " . $kategori_rapat_url; ?></h2>
 
     <?php echo $message; // Menampilkan pesan sukses/error ?>
 
     <form action="" method="POST">
+        <?php if ($id_resume_to_edit): ?>
+        <input type="hidden" name="resume_id" value="<?php echo htmlspecialchars($id_resume_to_edit); ?>">
+        <?php endif; ?>
         <input type="hidden" name="kategori_rapat" value="<?php echo htmlspecialchars($kategori_rapat_url); ?>">
         <input type="hidden" id="id_agenda_selected_hidden" name="nomor_agenda_selected_id" value="<?php echo htmlspecialchars($nomor_agenda_form_selected_id); ?>">
 
@@ -276,9 +336,10 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
                 // Ini akan memerlukan AJAX call lagi atau data agendas yang sudah di-cache
                 // Untuk kesederhanaan, saat validasi gagal, pengguna harus memilih ulang nomor agenda.
                 // Atau, Anda bisa panggil JavaScript 'loadAgendaDetails' dengan tanggal terpilih.
+                // Bagian ini sekarang akan diisi oleh JavaScript DOMContentLoaded secara otomatis
                 ?>
             </select>
-            <input type="hidden" id="nomor_agenda_display" name="nomor_agenda_display" value="<?php echo htmlspecialchars($nomor_agenda_form_text); ?>">
+            <input type="hidden" id="nomor_agenda_display_hidden" name="nomor_agenda_display" value="<?php echo htmlspecialchars($nomor_agenda_form_text); ?>">
         </div>
 
         <div class="form-group-resume">
@@ -336,14 +397,13 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
 
     // Mendapatkan referensi ke elemen-elemen HTML yang akan dimanipulasi
     const tanggalAgendaDropdown = document.getElementById('tanggal_agenda_dropdown');
-    const nomorAgendaDropdown = document.getElementById('nomor_agenda_dropdown'); // Baru: Dropdown Nomor Agenda
+    const nomorAgendaDropdown = document.getElementById('nomor_agenda_dropdown'); // Dropdown Nomor Agenda
     const perihalAgendaInput = document.getElementById('perihal_agenda_text'); // Input untuk Perihal Agenda
     const waktuMulaiInput = document.getElementById('waktu_mulai'); // Input untuk Waktu Mulai (readonly)
     const idAgendaSelectedHidden = document.getElementById('id_agenda_selected_hidden'); // Hidden input untuk menyimpan ID Agenda terpilih
+    const nomorAgendaDisplayTextHidden = document.getElementById('nomor_agenda_display_hidden'); // Hidden input untuk menyimpan teks Nomor Agenda yang ditampilkan
 
-    // Variabel untuk menyimpan data agenda yang sudah di-fetch secara lokal
-    // Ini penting agar kita tidak perlu request AJAX lagi saat memilih Nomor Agenda
-    let fetchedAgendas = [];
+    let fetchedAgendas = []; // Variabel global untuk menyimpan data agenda yang sudah di-fetch
 
     // Mengambil kategori rapat dari hidden input PHP (untuk filtering AJAX)
     const kategoriRapat = document.querySelector('input[name="kategori_rapat"]').value;
@@ -354,15 +414,14 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
         const selectedDate = tanggalAgendaDropdown.value;
         console.log("Tanggal yang dipilih:", selectedDate); // Debugging
 
-        // Reset dan kosongkan semua field terkait
         nomorAgendaDropdown.innerHTML = '<option value="">-- Memuat Nomor Agenda... --</option>';
         nomorAgendaDropdown.disabled = true;
         perihalAgendaInput.value = '';
         waktuMulaiInput.value = '';
-        idAgendaSelectedHidden.value = ''; // Penting: Reset hidden ID juga
+        idAgendaSelectedHidden.value = '';
+        nomorAgendaDisplayTextHidden.value = ''; // Reset hidden display text
 
-        // Reset variabel agendas yang sudah di-fetch
-        fetchedAgendas = [];
+        fetchedAgendas = []; // Reset data agendas yang sudah di-fetch
 
         if (selectedDate) {
             try {
@@ -387,17 +446,14 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
                 const agendas = JSON.parse(rawResponseText);
                 console.log("Parsed JSON:", agendas); // Debugging
 
-                // Simpan data agendas yang di-fetch ke variabel lokal
-                fetchedAgendas = agendas;
+                fetchedAgendas = agendas; // Simpan data ke variabel global
 
-                // Isi dropdown Nomor Agenda
                 nomorAgendaDropdown.innerHTML = '<option value="">-- Pilih Nomor Agenda --</option>';
                 if (fetchedAgendas.length > 0) {
                     fetchedAgendas.forEach(agenda => {
                         const option = document.createElement('option');
-                        // Value option adalah ID agenda, teksnya adalah Nomor Undangan
-                        option.value = agenda.id;
-                        option.textContent = agenda.nomor_undangan;
+                        option.value = agenda.id; // Value adalah ID agenda
+                        option.textContent = agenda.nomor_undangan; // Teks yang ditampilkan adalah Nomor Agenda
                         nomorAgendaDropdown.appendChild(option);
                     });
                     nomorAgendaDropdown.disabled = false; // Aktifkan dropdown
@@ -405,14 +461,20 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
                     nomorAgendaDropdown.innerHTML = '<option value="">-- Tidak ada agenda untuk tanggal ini --</option>';
                 }
 
-                // Jika ada nilai yang terpilih sebelumnya karena validasi gagal, coba pulihkan
-                const oldNomorAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>";
-                if (oldNomorAgendaId) {
-                    nomorAgendaDropdown.value = oldNomorAgendaId;
-                    // Setelah memilih, panggil fungsi untuk mengisi Perihal dan Jam Mulai
-                    populatePerihalAndJam();
-                }
+                // Setelah dropdown terisi, coba pre-select jika ada nilai dari PHP (mode edit atau validasi gagal)
+                // Ini mengambil ID agenda yang sudah terpilih dari PHP saat halaman dimuat
+                const phpSelectedAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>";
+                // Ini mengambil tanggal yang sudah terpilih dari PHP saat halaman dimuat
+                const phpSelectedDate = "<?php echo $tanggal_agenda_form; ?>";
 
+                // Memastikan ID yang dipilih PHP dan tanggal yang sedang diproses AJAX cocok
+                if (phpSelectedAgendaId && phpSelectedDate === selectedDate) {
+                    // Periksa apakah opsi dengan ID yang sesuai benar-benar ada di dropdown yang baru diisi
+                    if (nomorAgendaDropdown.querySelector(`option[value="${phpSelectedAgendaId}"]`)) {
+                        nomorAgendaDropdown.value = phpSelectedAgendaId; // Set nilai dropdown
+                        populatePerihalAndJam(); // Panggil fungsi untuk mengisi field Perihal dan Jam
+                    }
+                }
 
             } catch (error) {
                 // Menangani error (misalnya: jaringan, JSON parsing gagal)
@@ -427,33 +489,36 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
             perihalAgendaInput.value = '';
             waktuMulaiInput.value = '';
             idAgendaSelectedHidden.value = '';
+            nomorAgendaDisplayTextHidden.value = '';
         }
     }
 
     // Fungsi untuk mengisi Perihal Agenda dan Jam Mulai berdasarkan pilihan Nomor Agenda
     function populatePerihalAndJam() {
         const selectedAgendaId = nomorAgendaDropdown.value;
-        console.log("ID Agenda yang dipilih dari dropdown Nomor Agenda:", selectedAgendaId); // Debugging
+        console.log("ID Agenda yang dipilih dari dropdown Nomor Agenda:", selectedAgendaId);
 
-        perihalAgendaInput.value = ''; // Reset perihal
-        waktuMulaiInput.value = ''; // Reset jam mulai
-        idAgendaSelectedHidden.value = ''; // Reset hidden ID
+        perihalAgendaInput.value = '';
+        waktuMulaiInput.value = '';
+        idAgendaSelectedHidden.value = '';
+        nomorAgendaDisplayTextHidden.value = ''; // Reset hidden display text
 
         if (selectedAgendaId) {
-            // Cari agenda yang cocok di array fetchedAgendas
+            // Cari agenda yang cocok di array fetchedAgendas (yang sudah ada di memori)
             const selectedAgenda = fetchedAgendas.find(agenda => agenda.id == selectedAgendaId);
 
             if (selectedAgenda) {
                 perihalAgendaInput.value = selectedAgenda.perihal;
                 waktuMulaiInput.value = selectedAgenda.jam;
                 idAgendaSelectedHidden.value = selectedAgenda.id; // Simpan ID ke hidden input
+                nomorAgendaDisplayTextHidden.value = selectedAgenda.nomor_undangan; // Simpan teks Nomor Agenda ke hidden input
 
-                console.log("Perihal dan Jam Mulai diisi:", selectedAgenda.perihal, selectedAgenda.jam); // Debugging
+                console.log("Perihal dan Jam Mulai diisi:", selectedAgenda.perihal, selectedAgenda.jam);
             } else {
-                console.warn('Agenda tidak ditemukan di data yang di-fetch untuk ID ini.', selectedAgendaId); // Debugging
+                console.warn('Agenda tidak ditemukan di data yang di-fetch untuk ID ini.', selectedAgendaId);
             }
         } else {
-            console.log("Nomor Agenda tidak dipilih, reset Perihal dan Jam Mulai."); // Debugging
+            console.log("Nomor Agenda tidak dipilih, reset Perihal dan Jam Mulai.");
         }
     }
 
@@ -469,17 +534,21 @@ include '../includes/header.php'; // Path relatif dari resume_rapat/ ke includes
     nomorAgendaDropdown.addEventListener('change', populatePerihalAndJam);
 
 
-    // Saat halaman pertama kali dimuat, jika sudah ada tanggal/nomor agenda yang dipilih (misal karena validasi gagal),
-    // coba muat detail agenda.
+    // Saat halaman pertama kali dimuat (DOMContentLoaded)
     document.addEventListener('DOMContentLoaded', () => {
-        console.log("DOMContentLoaded event fired."); // Debugging
-        const initialSelectedDate = tanggalAgendaDropdown.value;
-        const initialSelectedAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>"; // Ambil ID yang dipilih saat validasi gagal
+        console.log("DOMContentLoaded event fired.");
+        const initialSelectedDate = "<?php echo $tanggal_agenda_form; ?>"; // Ambil nilai awal tanggal dari PHP
+        const initialSelectedAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>"; // Ambil ID agenda awal dari PHP
 
+        // Jika ada tanggal yang sudah terpilih dari PHP (mode edit atau validasi gagal)
         if (initialSelectedDate) {
-            console.log("Tanggal sudah terpilih saat DOMContentLoaded. Memuat detail agenda...");
+            tanggalAgendaDropdown.value = initialSelectedDate; // Set dropdown tanggal
+            console.log("Tanggal sudah terpilih saat DOMContentLoaded. Memuat detail agenda dan mencoba pre-select...");
+            
+            // Panggil fungsi untuk memuat agenda, dan setelah selesai (then),
+            // coba pre-select Nomor Agenda dan isi Perihal/Jam Mulai
             loadAgendaDetailsAndPopulateDropdown().then(() => {
-                // Setelah loadAgendaDetailsAndPopulateDropdown selesai mengisi dropdown nomor agenda,
+                // Setelah dropdown nomor agenda diisi oleh AJAX,
                 // barulah kita bisa mencoba memilih nilai awal jika ada
                 if (initialSelectedAgendaId && nomorAgendaDropdown.querySelector(`option[value="${initialSelectedAgendaId}"]`)) {
                     nomorAgendaDropdown.value = initialSelectedAgendaId;

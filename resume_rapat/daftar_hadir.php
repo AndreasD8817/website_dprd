@@ -523,7 +523,7 @@ include '../includes/header.php';
             <table class="resume-list-table">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th>No</th>
                         <th>Tanggal Agenda</th>
                         <th>Nomor Agenda</th>
                         <th>Perihal Agenda</th>

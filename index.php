@@ -5,9 +5,9 @@ include 'includes/header.php'; // Termasuk header
 ?>
 
 <div class="hero-section">
-    <h1>Selamat Datang di Website Resmi DPRD Kota Surabaya</h1>
-    <p>Pusat Informasi dan Aspirasi Masyarakat</p>
-    <a href="/dprd_website/input_agenda_dprd/index.php" class="hero-button">Mulai Input Agenda</a>
+    <h1>Sistem Integrasi Sekwan (SIS) DPRD Kota Surabaya</h1>
+    <p>Pusat Informasi Aduan, Rapat dan Aspirasi Masyarakat</p>
+    <a href="https://dprd.surabaya.go.id/" class="hero-button" target="_blank" rel="noopener noreferrer">Kunjungi Website DPRD</a>
 </div>
 
 <section class="features-section">
@@ -16,11 +16,7 @@ include 'includes/header.php'; // Termasuk header
         <p>Kelola dan masukkan detail agenda rapat DPRD dengan mudah.</p>
         <a href="/dprd_website/input_agenda_dprd/index.php" class="card-link">Lihat Selengkapnya</a>
     </div>
-    <div class="feature-card">
-        <h3>Daftar Hadir</h3>
-        <p>Catat dan kelola daftar kehadiran anggota rapat.</p>
-        <a href="/dprd_website/daftar_hadir/index.php" class="card-link">Lihat Selengkapnya</a>
-    </div>
+   
     <div class="feature-card">
         <h3>Resume Rapat</h3>
         <p>Lihat dan kelola resume atau notulen hasil rapat.</p>

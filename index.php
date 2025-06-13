@@ -13,7 +13,7 @@ include 'includes/header.php'; // Termasuk header
 <section class="features-section">
     <div class="feature-card">
         <h3>Input Agenda Rapat</h3>
-        <p>Kelola dan masukkan detail agenda rapat DPRD dengan mudah.</p>
+        <p>Input Agenda Rapat DPRD dengan mudah.</p>
         <a href="/dprd_website/input_agenda_dprd/index.php" class="card-link">Lihat Selengkapnya</a>
     </div>
    
@@ -21,6 +21,12 @@ include 'includes/header.php'; // Termasuk header
         <h3>Resume Rapat</h3>
         <p>Lihat dan kelola resume atau notulen hasil rapat.</p>
         <a href="/dprd_website/resume_rapat/index.php" class="card-link">Lihat Selengkapnya</a>
+    </div>
+
+    <div class="feature-card">
+        <h3>Daftar Agenda Rapat</h3>
+        <p>Kelola dan masukkan detail agenda rapat DPRD dengan mudah.</p>
+        <a href="/dprd_website/input_agenda_dprd/daftar_agenda.php" class="card-link">Lihat Selengkapnya</a>
     </div>
     </section>
 

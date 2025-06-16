@@ -19,10 +19,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($data['tanggal']) && isset($data['kategori'])) {
         $tanggal = $data['tanggal'];
         $kategori = $data['kategori'];
+        // HAPUS BARIS INI: $existing_agendas_ids = isset($data['existing_agendas']) ? $data['existing_agendas'] : [];
+        // HAPUS BARIS INI: $edit_resume_id = isset($data['edit_resume_id']) ? $data['edit_resume_id'] : null;
 
+        // HAPUS BLOK KODE UNTUK MEMBANGUN NOT IN CLAUSE
+        // $not_in_clause_sql = '';
+        // $bind_types_dynamic = 'ss';
+        // $bind_params_dynamic = [&$tanggal, &$kategori];
+        // if (!empty($existing_agendas_ids)) {
+        //     $existing_agendas_ids = array_map('intval', $existing_agendas_ids);
+        //     $placeholders = implode(',', array_fill(0, count($existing_agendas_ids), '?'));
+        //     $not_in_clause_sql = " AND id NOT IN ({$placeholders})"; // Pastikan nama kolom PK di agenda_rapat adalah 'id'
+        //     $bind_types_dynamic .= str_repeat('i', count($existing_agendas_ids));
+        //     foreach ($existing_agendas_ids as $key => $id_val) {
+        //         $bind_params_dynamic[] = &$existing_agendas_ids[$key];
+        //     }
+        // }
+        
         // Query untuk mengambil agenda berdasarkan tanggal dan kategori
-        $stmt = $conn->prepare("SELECT id, nomor_undangan, perihal, jam FROM agenda_rapat WHERE tanggal = ? AND kategori = ? ORDER BY jam ASC");
-        $stmt->bind_param("ss", $tanggal, $kategori);
+        // KEMBALIKAN QUERY INI KE VERSI ASLI TANPA FILTER EXISTING_AGENDAS
+        $sql = "SELECT id, nomor_undangan, perihal, jam FROM agenda_rapat WHERE tanggal = ? AND kategori = ? ORDER BY jam ASC";
+        $stmt = $conn->prepare($sql);
+        
+        // Pastikan bind_param dipanggil dengan array referensi yang benar (hanya tanggal dan kategori)
+        // call_user_func_array([$stmt, 'bind_param'], array_merge([$bind_types_dynamic], $bind_params_dynamic)); // HAPUS INI
+        $stmt->bind_param("ss", $tanggal, $kategori); // GANTI DENGAN INI
+
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -32,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $agendas[] = $row;
             }
         }
-        $response = $agendas; // Mengembalikan array agenda
+        $response = $agendas;
         $stmt->close();
     }
     // --- LOGIKA UNTUK MENGAMBIL DETAIL AGENDA BERDASARKAN ID (untuk Jam Mulai) ---
@@ -40,13 +62,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $id_agenda = $data['id'];
 
         // Query untuk mengambil detail agenda berdasarkan ID
-        $stmt = $conn->prepare("SELECT jam FROM agenda_rapat WHERE id = ?");
+        $stmt = $conn->prepare("SELECT jam FROM agenda_rapat WHERE id = ?"); // Pastikan ini 'id' sesuai DB Anda
         $stmt->bind_param("i", $id_agenda);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            $response = $result->fetch_assoc(); // Mengembalikan detail agenda (jam)
+            $response = $result->fetch_assoc();
         } else {
             $response = ['error' => 'Agenda not found.'];
         }
@@ -60,11 +82,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $response = ['error' => 'Invalid request method.'];
 }
 
-// Menutup koneksi database
 if (isset($conn) && $conn instanceof mysqli) {
     $conn->close();
 }
 
-// Mengirim respons dalam format JSON
 echo json_encode($response);
-?>

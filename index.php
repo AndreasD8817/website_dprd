@@ -7,6 +7,7 @@ include 'includes/header.php'; // Termasuk header
 <div class="hero-section">
     <h1>Sistem Integrasi Sekwan (SIS) DPRD Kota Surabaya</h1>
     <p>Pusat Informasi Aduan, Rapat dan Aspirasi Masyarakat</p>
+    <p class="jawa-text">꧋ꦱꦺꦏꦿꦺꦠꦫꦶꦪꦠ꧀ꦢꦺꦮꦤ꧀ꦮꦏꦶꦭ꧀ꦫꦏꦾꦠ꧀ꦭꦭꦢꦤ꧀ꦏꦶꦛꦱꦸꦫꦧꦪ</p>
     <a href="https://dprd.surabaya.go.id/" class="hero-button" target="_blank" rel="noopener noreferrer">Kunjungi Website DPRD</a>
 </div>
 
@@ -16,7 +17,7 @@ include 'includes/header.php'; // Termasuk header
         <p>Input Agenda Rapat DPRD dengan mudah.</p>
         <a href="/dprd_website/input_agenda_dprd/index.php" class="card-link">Lihat Selengkapnya</a>
     </div>
-   
+    
     <div class="feature-card">
         <h3>Resume Rapat</h3>
         <p>Lihat dan kelola resume atau notulen hasil rapat.</p>
@@ -28,7 +29,7 @@ include 'includes/header.php'; // Termasuk header
         <p>Kelola dan masukkan detail agenda rapat DPRD dengan mudah.</p>
         <a href="/dprd_website/input_agenda_dprd/daftar_agenda.php" class="card-link">Lihat Selengkapnya</a>
     </div>
-    </section>
+</section>
 
 <style>
     .hero-section {
@@ -38,6 +39,7 @@ include 'includes/header.php'; // Termasuk header
         margin-bottom: 40px;
         border-radius: 8px;
         box-shadow: 0 4px 15px var(--shadow-light);
+        letter-spacing: 2px;
     }
     .hero-section h1 {
         font-size: 2.8em;
@@ -47,8 +49,15 @@ include 'includes/header.php'; // Termasuk header
     .hero-section p {
         font-size: 1.3em;
         color: var(--light-text);
-        margin-bottom: 30px;
+        margin-bottom: 10px; /* Jarak default untuk paragraf umum */
+    } 
+    /* BARU: CSS untuk paragraf Aksara Jawa */
+    .hero-section .jawa-text {
+        margin-bottom: 40px; /* Jarak lebih besar untuk mendorong tombol ke bawah */
+        font-size: 1.5em; /* Mungkin perlu disesuaikan agar lebih mudah dibaca */
+        color: var(--text-color);
     }
+    
     .hero-button {
         background-color: var(--primary-blue);
         color: white;
@@ -57,6 +66,7 @@ include 'includes/header.php'; // Termasuk header
         font-size: 1.1em;
         font-weight: 600;
         transition: background-color 0.3s ease, transform 0.2s ease;
+        /* margin-top: 0; */ /* Hapus atau set ke 0 karena jarak diatur dari margin-bottom paragraf di atasnya */
     }
     .hero-button:hover {
         background-color: var(--dark-blue);

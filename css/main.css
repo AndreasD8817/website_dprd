@@ -1,11 +1,11 @@
 /* --- Variabel CSS Global --- */
 :root {
-    --primary-blue: #007bff;
+    --primary-blue: #0056b3;
     --dark-blue: #0056b3;
     --light-blue: #e8f0fe;
     --warm-blue-bg: #f0f8ff;
     --text-color: #333;
-    --light-text: #666;
+    --light-text: #070707;
     --border-color: #cce0ff;
     --card-bg: #ffffff;
     --shadow-light: rgba(0, 0, 0, 0.05);

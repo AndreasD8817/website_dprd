@@ -105,20 +105,20 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
         <div class="category-card">
             <h3>Komisi A</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Komisi A">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Komisi A" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Komisi A">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Komisi A" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Komisi A"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi A'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Komisi A'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
 
         <div class="category-card">
             <h3>Komisi B</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Komisi B">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Komisi B" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Komisi B">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Komisi B" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Komisi B"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi B'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Komisi B'); ?>" class="card-link">Daftar Agenda</a>
                 
             </div>
         </div>
@@ -126,60 +126,60 @@ include '../includes/header.php'; // Path relatif ke file header (dari resume_ra
         <div class="category-card">
             <h3>Komisi C</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Komisi C">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Komisi C" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Komisi C">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Komisi C" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Komisi C"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi C'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Komisi C'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
 
         <div class="category-card">
             <h3>Komisi D</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Komisi D">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Komisi D" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Komisi D">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Komisi D" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Komisi D"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Komisi D'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Komisi D'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
 
         <div class="category-card">
             <h3>Rapat Pimpinan</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Rapat Pimpinan">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Rapat Pimpinan" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Rapat Pimpinan">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Rapat Pimpinan" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Rapat Pimpinan"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Rapat Pimpinan'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Rapat Pimpinan'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
 
         <div class="category-card">
             <h3>Badan Anggaran</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Badan Anggaran">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Badan Anggaran" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Badan Anggaran">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Badan Anggaran" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Badan Anggaran"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Badan Anggaran'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Badan Anggaran'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
 
         <div class="category-card">
             <h3>Badan Musyawarah</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Badan Musyawarah">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Badan Musyawarah" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Badan Musyawarah">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Badan Musyawarah" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Badan Musyawarah"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Badan Musyawarah'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Badan Musyawarah'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
 
         <div class="category-card">
             <h3>Paripurna</h3>
             <div class="action-buttons">
-                <a href="input_resume.php?kategori=Paripurna">Input Resume</a>
-                <a href="daftar_hadir.php?kategori=Paripurna" class="hadir-button">Daftar Hadir</a>
+                <!-- <a href="input_resume.php?kategori=Paripurna">Input Resume</a> -->
+                <!-- <a href="daftar_hadir.php?kategori=Paripurna" class="hadir-button">Daftar Hadir</a> -->
                 <!-- <a href="view_resume.php?kategori=Paripurna"class="card-link">Lihat Resume</a> -->
-                <a href="view_resume_by_category.php?kategori=<?php echo rawurlencode('Paripurna'); ?>" class="card-link">Lihat Resume</a>
+                <a href="daftar_agenda_by_category.php?kategori=<?php echo rawurlencode('Paripurna'); ?>" class="card-link">Daftar Agenda</a>
             </div>
         </div>
     </div>

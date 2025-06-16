@@ -1,26 +1,16 @@
 <?php
+session_start(); // PASTIKAN BARIS INI ADA DI PALING ATAS
+
 // Pastikan koneksi database tersedia
-include '../config/koneksi.php'; // Path relatif dari input_agenda_dprd/ ke config/
+include '../config/koneksi.php';
 
-// Set judul halaman
-$page_title = "Daftar Agenda Rapat - DPRD Kota Surabaya";
-
-// Inisialisasi variabel untuk pesan status (misal setelah hapus atau edit)
+// Inisialisasi variabel untuk pesan status
 $message = '';
-if (isset($_GET['status'])) {
-    if ($_GET['status'] == 'deleted') {
-        $message = '<div class="message success">Agenda berhasil dihapus!</div>';
-    } elseif ($_GET['status'] == 'error_delete') {
-        $message = '<div class="message error">Gagal menghapus agenda!</div>';
-    } elseif ($_GET['status'] == 'updated') {
-        $message = '<div class="message success">Agenda berhasil diperbarui!</div>';
-    } elseif ($_GET['status'] == 'added') {
-        $message = '<div class="message success">Agenda baru berhasil ditambahkan!</div>';
-    } elseif ($_GET['status'] == 'invalid_edit_id') {
-        $message = '<div class="message error">ID agenda tidak valid untuk diedit!</div>';
-    } elseif ($_GET['status'] == 'agenda_not_found') {
-        $message = '<div class="message error">Agenda tidak ditemukan!</div>';
-    }
+if (isset($_SESSION['message'])) {
+    $msg_type = $_SESSION['message']['type'];
+    $msg_text = $_SESSION['message']['text'];
+    $message = '<div class="message ' . $msg_type . '">' . htmlspecialchars($msg_text) . '</div>';
+    unset($_SESSION['message']); // Hapus pesan setelah ditampilkan
 }
 
 // Query untuk mengambil semua data dari tabel agenda_rapat
@@ -40,7 +30,7 @@ $stmt_agenda = $conn->prepare("
 $stmt_agenda->execute();
 $result_agenda = $stmt_agenda->get_result();
 
-// Data untuk disimpan sementara agar bisa diakses di HTML setelah statement ditutup
+// Data untuk disimpan sementara agar bisa diakses di HTML
 $agendas_data = [];
 if ($result_agenda->num_rows > 0) {
     while($row = $result_agenda->fetch_assoc()) {
@@ -124,7 +114,7 @@ include '../includes/header.php';
     }
 
     .agenda-table .actions {
-        white-space: nowrap; /* Mencegah tombol pecah baris */
+        white-space: nowrap;
     }
 
     .agenda-table .actions a {
@@ -137,15 +127,15 @@ include '../includes/header.php';
         transition: background-color 0.3s ease;
     }
 
-    .agenda-table .actions .edit-btn { background-color: #ffc107; } /* Kuning */
+    .agenda-table .actions .edit-btn { background-color: #ffc107; }
     .agenda-table .actions .edit-btn:hover { background-color: #e0a800; }
     
-    .agenda-table .actions .delete-btn { background-color: #dc3545; } /* Merah */
+    .agenda-table .actions .delete-btn { background-color: #dc3545; }
     .agenda-table .actions .delete-btn:hover { background-color: #c82333; }
 
     /* Tambahan CSS untuk tombol yang didisable */
     .actions .disabled-btn {
-        background-color: #cccccc; /* Warna abu-abu */
+        background-color: #cccccc;
         cursor: not-allowed;
         opacity: 0.7;
         pointer-events: none; /* PENTING: Mencegah klik sepenuhnya */
@@ -153,7 +143,7 @@ include '../includes/header.php';
 
     .action-buttons-top {
         margin-bottom: 20px;
-        text-align: right; /* Tombol rata kanan */
+        text-align: right;
     }
     .action-buttons-top a {
         display: inline-block;
@@ -164,10 +154,10 @@ include '../includes/header.php';
         text-decoration: none;
         font-weight: 500;
         transition: background-color 0.3s ease;
-        margin-left: 10px; /* Jarak antar tombol */
+        margin-left: 10px;
     }
     .action-buttons-top a.add-new {
-        background-color: #28a745; /* Hijau untuk tambah baru */
+        background-color: #28a745;
     }
     .action-buttons-top a.add-new:hover {
         background-color: #218838;
@@ -194,6 +184,115 @@ include '../includes/header.php';
         background-color: var(--error-bg);
         color: var(--error-text);
         border: 1px solid #f5c6cb;
+    }
+
+    /* Styling Modal */
+    .modal {
+        display: none; /* TETAPKAN INI display: none; */
+        position: fixed; /* Tetap di posisi yang sama saat scroll */
+        z-index: 1000; /* Letakkan di atas semua elemen lain */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Aktifkan scroll jika konten terlalu besar */
+        background-color: rgba(0,0,0,0.4); /* Latar belakang gelap semi-transparan */
+        /* HAPUS display: flex; DARI SINI */
+        justify-content: center;
+        align-items: center;
+    }
+    /* Tambahkan kelas baru yang akan diberikan oleh JavaScript saat modal ingin ditampilkan */
+    .modal.is-visible {
+        display: flex; /* Hanya tampilkan sebagai flexbox jika kelas is-visible ada */
+    }
+
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 30px;
+        border: 1px solid #888;
+        width: 80%; /* Lebar modal */
+        max-width: 500px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+        text-align: center;
+    }
+
+    .modal-content h2 {
+        color: var(--primary-blue);
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+
+    .modal-content p {
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        color: var(--text-color);
+    }
+
+    .modal-content ul {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 20px;
+        text-align: left;
+        max-width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .modal-content ul li {
+        padding: 5px 0;
+        color: var(--light-text);
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .modal-buttons button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.3s ease;
+    }
+
+    .modal-buttons .btn-cancel {
+        background-color: #6c757d;
+        color: white;
+    }
+    .modal-buttons .btn-cancel:hover {
+        background-color: #5a6268;
+    }
+
+    .modal-buttons .btn-delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    .modal-buttons .btn-delete:hover {
+        background-color: #c82333;
+    }
+
+    .close-button {
+        color: #aaa;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .close-button:hover,
+    .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
     }
 </style>
 
@@ -227,8 +326,8 @@ include '../includes/header.php';
                     foreach($agendas_data as $row) {
                         // Tentukan apakah agenda ini memiliki resume terkait
                         $has_resume = in_array($row['id'], $agendas_with_resume);
-                        $disabled_class = $has_resume ? 'disabled-btn' : ''; // Tambahkan class jika ada resume
-                        $disabled_tooltip = $has_resume ? 'title="Tidak bisa diubah/dihapus karena sudah ada notulensi rapat terkait."' : ''; // Tooltip
+                        $disabled_class = $has_resume ? 'disabled-btn' : '';
+                        $disabled_tooltip = $has_resume ? 'title="Tidak bisa diubah/dihapus karena sudah ada notulensi rapat terkait."' : '';
 
                         echo "<tr>";
                         echo "<td>" . $counter++ . "</td>";
@@ -241,7 +340,7 @@ include '../includes/header.php';
                         // Link untuk mengedit agenda
                         echo "<a href='edit_agenda.php?id=" . $row["id"] . "' class='edit-btn " . $disabled_class . "' " . $disabled_tooltip . ">Edit</a>";
                         // Link untuk menghapus agenda
-                        echo "<a href='delete_agenda.php?id=" . $row["id"] . "' class='delete-btn " . $disabled_class . "' onclick='return " . ($has_resume ? 'false' : 'confirm("Apakah Anda yakin ingin menghapus agenda ini?");') . "' " . $disabled_tooltip . ">Hapus</a>";
+                        echo "<a href='#' class='delete-btn " . $disabled_class . "' data-id='" . $row["id"] . "' data-perihal='" . htmlspecialchars($row["perihal"]) . "' data-nomor='" . htmlspecialchars($row["nomor_undangan"]) . "' data-has-resume='" . ($has_resume ? 'true' : 'false') . "' " . $disabled_tooltip . ">Hapus</a>";
                         echo "</td>";
                         echo "</tr>";
                     }
@@ -254,6 +353,91 @@ include '../includes/header.php';
     </div>
 </div>
 
+<div id="deleteConfirmModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Konfirmasi Penghapusan Agenda</h2>
+        <p id="modalMessage">Apakah Anda yakin ingin menghapus agenda ini? Proses ini akan menghapus:</p>
+        <ul id="modalDetails">
+            <li><strong><span id="modalAgendaText"></span></strong></li>
+            <li id="modalResumeCount" style="display:none;">Semua resume rapat terkait (<span id="modalResumeNum">0</span> resume).</li>
+        </ul>
+        <div class="modal-buttons">
+            <button id="cancelDeleteBtn" class="btn-cancel">Batal</button>
+            <button id="confirmDeleteBtn" class="btn-delete">Hapus</button>
+        </div>
+    </div>
+</div>
+<script>
+    // Pastikan ini adalah kode baru di bagian paling bawah file, setelah HTML
+    const deleteModal = document.getElementById('deleteConfirmModal');
+    const closeButton = document.querySelector('.close-button');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const modalAgendaText = document.getElementById('modalAgendaText');
+    const modalResumeCount = document.getElementById('modalResumeCount');
+    const modalResumeNum = document.getElementById('modalResumeNum');
+
+    let agendaToDeleteId = null; // Menyimpan ID agenda yang akan dihapus
+    let agendaHasResume = false; // Menyimpan status apakah agenda punya resume
+
+    // Fungsi untuk menampilkan modal
+    function openDeleteModal(id, perihal, nomor, hasResume) {
+        agendaToDeleteId = id;
+        agendaHasResume = hasResume;
+        modalAgendaText.textContent = `${nomor} / ${perihal}`;
+
+        if (hasResume === 'true') { // hasResume dari data attribute akan jadi string 'true'/'false'
+            modalResumeCount.style.display = 'list-item';
+            document.getElementById('modalMessage').textContent = 'Anda yakin ingin menghapus agenda ini? Proses ini akan menghapus:';
+            modalResumeNum.textContent = 'semua';
+        } else {
+            modalResumeCount.style.display = 'none';
+            document.getElementById('modalMessage').textContent = 'Apakah Anda yakin ingin menghapus agenda ini?';
+        }
+        deleteModal.classList.add('is-visible'); // GANTI: set display flex dengan menambah class
+    }
+
+    // Fungsi untuk menyembunyikan modal
+    function closeDeleteModal() {
+        deleteModal.classList.remove('is-visible'); // GANTI: set display none dengan menghapus class
+        agendaToDeleteId = null;
+        agendaHasResume = false;
+    }
+
+    // Event listeners
+    closeButton.addEventListener('click', closeDeleteModal);
+    cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+    // Saat tombol "Hapus" di tabel diklik (kita akan menggunakan event delegation)
+    document.querySelector('.agenda-table').addEventListener('click', (event) => {
+        const target = event.target;
+        if (target.classList.contains('delete-btn') && !target.classList.contains('disabled-btn')) {
+            event.preventDefault(); // Mencegah link untuk langsung jalan
+            const id = target.dataset.id;
+            const perihal = target.dataset.perihal;
+            const nomor = target.dataset.nomor;
+            const hasResume = target.dataset.hasResume; // 'true' atau 'false' string
+            openDeleteModal(id, perihal, nomor, hasResume);
+        }
+    });
+
+    confirmDeleteBtn.addEventListener('click', () => {
+        if (agendaToDeleteId) {
+            // Arahkan ke skrip delete_agenda.php
+            window.location.href = `delete_agenda.php?id=${agendaToDeleteId}`;
+        }
+        closeDeleteModal();
+    });
+
+    // Menutup modal jika klik di luar konten modal
+    window.addEventListener('click', (event) => {
+        if (event.target == deleteModal) {
+            closeDeleteModal();
+        }
+    });
+
+</script>
 <?php
 include '../includes/footer.php';
 ?>

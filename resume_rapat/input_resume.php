@@ -16,9 +16,11 @@ $nomor_agenda_form_selected_id = ''; // ID agenda terpilih (dari agenda_rapat)
 $perihal_agenda_form = '';
 $nomor_agenda_form_text = '';
 $id_resume_to_edit = isset($_GET['id']) ? htmlspecialchars($_GET['id']) : null; // Mendapatkan ID resume jika dalam mode edit
+$id_agenda_from_url = isset($_GET['id_agenda']) ? htmlspecialchars($_GET['id_agenda']) : null; // Mendapatkan ID agenda jika dari daftar_agenda_by_category.php
 
 $message = ''; // Variabel untuk pesan sukses/error
-$is_edit_mode_with_participants = false; // Flag untuk mengontrol readonly/disabled
+$is_edit_mode_with_participants = false; // Flag untuk mengontrol readonly/disabled saat edit
+$is_new_input_from_agenda = false; // Flag untuk mengontrol readonly/disabled saat input baru dari agenda
 
 // Variabel untuk menyimpan data agenda yang dipilih dari database
 $all_unique_dates = []; // Untuk dropdown Tanggal Agenda
@@ -76,7 +78,7 @@ if ($id_resume_to_edit) {
         $nomor_agenda_form_text = $resume_data['nomor_undangan']; // Untuk ditampilkan
         $perihal_agenda_form = $resume_data['perihal']; // Untuk ditampilkan
 
-        // BARU: Cek apakah resume ini sudah memiliki peserta rapat
+        // Cek apakah resume ini sudah memiliki peserta rapat
         $stmt_check_participants = $conn->prepare("SELECT COUNT(*) FROM daftar_hadir_rapat WHERE id_resume = ?");
         $stmt_check_participants->bind_param("i", $id_resume_to_edit);
         $stmt_check_participants->execute();
@@ -97,6 +99,34 @@ if ($id_resume_to_edit) {
 }
 
 
+// --- BARU: LOGIKA UNTUK INPUT BARU DARI HALAMAN DAFTAR AGENDA (Auto-fill & Readonly) ---
+// Ini hanya berjalan jika bukan mode edit ($id_resume_to_edit null) DAN ada id_agenda dari URL
+if (!$id_resume_to_edit && $id_agenda_from_url) {
+    $is_new_input_from_agenda = true; // Set flag
+
+    // Ambil detail agenda ini untuk mengisi form awal
+    $stmt_initial_agenda = $conn->prepare("SELECT nomor_undangan, perihal, tanggal, jam FROM agenda_rapat WHERE id = ?");
+    $stmt_initial_agenda->bind_param("i", $id_agenda_from_url);
+    $stmt_initial_agenda->execute();
+    $result_initial_agenda = $stmt_initial_agenda->get_result();
+
+    if ($result_initial_agenda->num_rows > 0) {
+        $initial_agenda_data = $result_initial_agenda->fetch_assoc();
+        // Isi variabel form dengan data dari agenda yang dipilih
+        $tanggal_agenda_form = $initial_agenda_data['tanggal'];
+        $waktu_mulai_form = $initial_agenda_data['jam'];
+        $nomor_agenda_form_selected_id = $id_agenda_from_url; // Penting untuk hidden input
+        $nomor_agenda_form_text = $initial_agenda_data['nomor_undangan'];
+        $perihal_agenda_form = $initial_agenda_data['perihal'];
+    } else {
+        // Jika id_agenda dari URL tidak valid, reset flag dan berikan pesan
+        $is_new_input_from_agenda = false;
+        $message = '<div class="message error">ID Agenda tidak valid atau tidak ditemukan!</div>';
+    }
+    $stmt_initial_agenda->close();
+}
+
+
 // --- Mengambil semua id_agenda yang sudah memiliki resume, dengan pengecualian untuk mode edit ---
 $agendas_with_existing_resume = [];
 $stmt_existing_resumes = $conn->prepare("SELECT id_agenda FROM resume_rapat WHERE id_agenda IS NOT NULL");
@@ -105,7 +135,6 @@ $result_existing_resumes = $stmt_existing_resumes->get_result();
 if ($result_existing_resumes->num_rows > 0) {
     while ($row_existing = $result_existing_resumes->fetch_assoc()) {
         // HANYA TAMBAHKAN KE ARRAY JIKA BUKAN ID AGENDA DARI RESUME YANG SEDANG DIEDIT
-        // Logika ini sudah OK. Jika dalam mode edit, id_agenda_form_selected_id akan berisi id_agenda dari resume yang sedang diedit
         if (!($id_resume_to_edit && $row_existing['id_agenda'] == $nomor_agenda_form_selected_id)) {
             $agendas_with_existing_resume[] = $row_existing['id_agenda'];
         }
@@ -119,9 +148,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Ambil ID resume jika dalam mode UPDATE (dari input hidden)
     $submitted_resume_id = isset($_POST['resume_id']) ? htmlspecialchars(trim($_POST['resume_id'])) : null;
 
-    // BARU: Cek apakah resume ini punya peserta (lagi, untuk validasi saat submit)
-    $submit_is_edit_with_participants = false;
-    if ($submitted_resume_id) {
+    // Tentukan mode submission untuk validasi dan update query
+    $is_submit_new_from_agenda = ($id_agenda_from_url && !$submitted_resume_id);
+    $is_submit_edit_with_participants = false;
+    if ($submitted_resume_id) { // Hanya cek jika ini update
         $stmt_check_participants_submit = $conn->prepare("SELECT COUNT(*) FROM daftar_hadir_rapat WHERE id_resume = ?");
         $stmt_check_participants_submit->bind_param("i", $submitted_resume_id);
         $stmt_check_participants_submit->execute();
@@ -129,26 +159,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check_participants_submit->fetch();
         $stmt_check_participants_submit->close();
         if ($count_on_submit > 0) {
-            $submit_is_edit_with_participants = true;
+            $is_submit_edit_with_participants = true;
         }
     }
 
-    // Ambil data form. Perhatikan jika dalam mode edit dengan peserta, beberapa field diabaikan.
+    // Ambil data form. Perhatikan jika dalam mode readonly, data diambil dari variabel form PHP, bukan POST.
     $kategori_rapat_submitted = htmlspecialchars(trim($_POST['kategori_rapat']));
-    $id_agenda_selected_submitted = $submit_is_edit_with_participants ? $nomor_agenda_form_selected_id : htmlspecialchars(trim($_POST['nomor_agenda_selected_id']));
-    $tanggal_agenda_submitted = $submit_is_edit_with_participants ? $tanggal_agenda_form : htmlspecialchars(trim($_POST['tanggal_agenda_selected']));
-    $waktu_mulai_submitted = $submit_is_edit_with_participants ? $waktu_mulai_form : htmlspecialchars(trim($_POST['waktu_mulai']));
-    $waktu_selesai_submitted = $submit_is_edit_with_participants ? $waktu_selesai_form : htmlspecialchars(trim($_POST['waktu_selesai']));
-    $tempat_submitted = $submit_is_edit_with_participants ? $tempat_form : htmlspecialchars(trim($_POST['tempat']));
-    $kegiatan_submitted = $submit_is_edit_with_participants ? $kegiatan_form : htmlspecialchars(trim($_POST['kegiatan']));
+    // ID Agenda, Tanggal, Waktu Mulai, Tempat, Kegiatan diambil dari variabel form PHP jika readonly
+    // Ini berlaku untuk is_new_input_from_agenda dan is_submit_edit_with_participants
+    $id_agenda_selected_submitted = ($is_new_input_from_agenda || $is_submit_edit_with_participants) ? $nomor_agenda_form_selected_id : htmlspecialchars(trim($_POST['nomor_agenda_selected_id']));
+    $tanggal_agenda_submitted = ($is_new_input_from_agenda || $is_submit_edit_with_participants) ? $tanggal_agenda_form : htmlspecialchars(trim($_POST['tanggal_agenda_selected']));
+    $waktu_mulai_submitted = ($is_new_input_from_agenda || $is_submit_edit_with_participants) ? $waktu_mulai_form : htmlspecialchars(trim($_POST['waktu_mulai']));
+    $waktu_selesai_submitted = $is_submit_edit_with_participants ? $waktu_selesai_form : htmlspecialchars(trim($_POST['waktu_selesai'])); // Waktu Selesai hanya readonly saat edit_with_participants
+    $tempat_submitted = $is_submit_edit_with_participants ? $tempat_form : htmlspecialchars(trim($_POST['tempat']));
+    $kegiatan_submitted = $is_submit_edit_with_participants ? $kegiatan_form : htmlspecialchars(trim($_POST['kegiatan']));
+    
     $kesimpulan_submitted = $_POST['kesimpulan']; // Konten TinyMCE
 
     // Untuk mengembalikan nilai ke form jika validasi gagal
     $nomor_agenda_selected_text_submitted = htmlspecialchars(trim($_POST['nomor_agenda_display_hidden']));
     $perihal_agenda_selected_submitted = htmlspecialchars(trim($_POST['perihal_agenda_display']));
 
-    // Validasi input wajib. Untuk mode edit dengan peserta, hanya kesimpulan yang wajib di-cek.
-    if (empty($kesimpulan_submitted) || (!$submit_is_edit_with_participants && (empty($id_agenda_selected_submitted) || empty($tanggal_agenda_submitted) || empty($waktu_mulai_submitted) || empty($waktu_selesai_submitted) || empty($tempat_submitted) || empty($kegiatan_submitted)))) {
+    // Validasi input wajib. Untuk mode readonly, hanya kesimpulan yang wajib di-cek.
+    if (empty($kesimpulan_submitted) || (!($is_new_input_from_agenda || $is_submit_edit_with_participants) && (empty($id_agenda_selected_submitted) || empty($tanggal_agenda_submitted) || empty($waktu_mulai_submitted) || empty($waktu_selesai_submitted) || empty($tempat_submitted) || empty($kegiatan_submitted)))) {
         $message = '<div class="message error">Semua kolom wajib diisi!</div>';
 
         // Kembalikan nilai ke form agar tidak hilang saat validasi gagal
@@ -167,8 +200,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         // Mode INSERT atau UPDATE
         if ($submitted_resume_id) { // Jika ada resume_id, berarti UPDATE
-            // Jika ada peserta, hanya update kesimpulan. Data lain diambil dari nilai awal form.
-            if ($submit_is_edit_with_participants) {
+            // Jika ini mode edit dengan peserta atau input baru dari agenda (readonly), hanya update kesimpulan.
+            // Data lain diambil dari nilai awal form.
+            if ($is_submit_edit_with_participants || $is_submit_new_from_agenda) {
                 $stmt_action = $conn->prepare("UPDATE resume_rapat SET kesimpulan = ? WHERE id = ? AND kategori_rapat = ?");
                 $stmt_action->bind_param("sis",
                     $kesimpulan_submitted,
@@ -176,6 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $kategori_rapat_submitted
                 );
             } else {
+                // UPDATE penuh jika tidak ada peserta dan bukan input dari agenda
                 $stmt_action = $conn->prepare("UPDATE resume_rapat SET id_agenda = ?, kategori_rapat = ?, tanggal_agenda = ?, waktu_mulai = ?, waktu_selesai = ?, tempat = ?, kegiatan = ?, kesimpulan = ? WHERE id = ? AND kategori_rapat = ?");
                 $stmt_action->bind_param("isssssssis",
                     $id_agenda_selected_submitted,
@@ -383,7 +418,7 @@ include '../includes/header.php';
 
         <div class="form-group-resume">
             <label for="tanggal_agenda_dropdown">Tanggal Agenda:</label>
-            <select id="tanggal_agenda_dropdown" name="tanggal_agenda_selected" required <?php echo $is_edit_mode_with_participants ? 'disabled' : ''; ?>>
+            <select id="tanggal_agenda_dropdown" name="tanggal_agenda_selected" required <?php echo ($is_new_input_from_agenda || $is_edit_mode_with_participants) ? 'disabled' : ''; ?>>
                 <option value="">-- Pilih Tanggal Agenda --</option>
                 <?php
                 // Mengisi dropdown tanggal dengan data dari $all_unique_dates (diambil dari PHP)
@@ -397,10 +432,9 @@ include '../includes/header.php';
 
         <div class="form-group-resume">
             <label for="nomor_agenda_dropdown">Nomor Agenda:</label>
-            <select id="nomor_agenda_dropdown" name="nomor_agenda_dropdown_selected" required <?php echo $is_edit_mode_with_participants ? 'disabled' : ''; ?>>
+            <select id="nomor_agenda_dropdown" name="nomor_agenda_dropdown_selected" required <?php echo ($is_new_input_from_agenda || $is_edit_mode_with_participants) ? 'disabled' : ''; ?>>
                 <option value="">-- Pilih Nomor Agenda --</option>
                 <?php
-                // Jika validasi gagal, dan ada ID agenda yang dipilih, coba isi kembali opsi ini
                 // Ini akan memastikan opsi yang dipilih saat validasi gagal (atau mode edit) akan tampil
                 if ($nomor_agenda_form_selected_id && $nomor_agenda_form_text) {
                     echo "<option value='" . htmlspecialchars($nomor_agenda_form_selected_id) . "' selected>" . htmlspecialchars($nomor_agenda_form_text) . "</option>";
@@ -420,18 +454,18 @@ include '../includes/header.php';
             <div class="time-inputs">
                 <input type="time" id="waktu_mulai" name="waktu_mulai" required readonly value="<?php echo htmlspecialchars($waktu_mulai_form); ?>">
                 <span>-</span>
-                <input type="time" id="waktu_selesai" name="waktu_selesai" required <?php echo $is_edit_mode_with_participants ? 'readonly' : ''; ?> value="<?php echo htmlspecialchars($waktu_selesai_form); ?>">
+                <input type="time" id="waktu_selesai" name="waktu_selesai" required <?php echo ($is_edit_mode_with_participants) ? 'readonly' : ''; ?> value="<?php echo htmlspecialchars($waktu_selesai_form); ?>">
             </div>
         </div>
 
         <div class="form-group-resume">
             <label for="tempat">Tempat:</label>
-            <input type="text" id="tempat" name="tempat" placeholder="Contoh: Ruang Banggar Lt 2 Gedung DPRD Kota Surabaya" required <?php echo $is_edit_mode_with_participants ? 'readonly' : ''; ?> value="<?php echo htmlspecialchars($tempat_form); ?>">
+            <input type="text" id="tempat" name="tempat" placeholder="Contoh: Ruang Banggar Lt 2 Gedung DPRD Kota Surabaya" required <?php echo ($is_edit_mode_with_participants) ? 'readonly' : ''; ?> value="<?php echo htmlspecialchars($tempat_form); ?>">
         </div>
 
         <div class="form-group-resume">
             <label for="kegiatan">Kegiatan:</label>
-            <input type="text" id="kegiatan" name="kegiatan" placeholder="Contoh: Rapat Forum Perangkat Daerah dan Forum Konsultasi Publik" required <?php echo $is_edit_mode_with_participants ? 'readonly' : ''; ?> value="<?php echo htmlspecialchars($kegiatan_form); ?>">
+            <input type="text" id="kegiatan" name="kegiatan" placeholder="Contoh: Rapat Forum Perangkat Daerah dan Forum Konsultasi Publik" required <?php echo ($is_edit_mode_with_participants) ? 'readonly' : ''; ?> value="<?php echo htmlspecialchars($kegiatan_form); ?>">
         </div>
 
         <div class="form-group-resume">
@@ -477,9 +511,14 @@ include '../includes/header.php';
     const kategoriRapat = document.querySelector('input[name="kategori_rapat"]').value;
     console.log("Kategori Rapat (dari hidden input):", kategoriRapat); // Debugging
 
-    // BARU: Mendapatkan status mode edit dengan peserta dari PHP (untuk JavaScript)
+    // BARU: Mendapatkan status mode dari PHP (untuk JavaScript)
     const isEditModeWithParticipantsJS = <?php echo json_encode($is_edit_mode_with_participants); ?>;
-    console.log("Is Edit Mode With Participants:", isEditModeWithParticipantsJS);
+    const isNewInputFromAgendaJS = <?php echo json_encode($is_new_input_from_agenda); ?>;
+    const initialSelectedDate = "<?php echo $tanggal_agenda_form; ?>"; // Ambil nilai awal tanggal dari PHP
+    const initialSelectedAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>"; // Ambil ID agenda awal dari PHP
+
+    console.log("Is Edit Mode With Participants:", isEditModeWithParticipantsJS); // Debugging
+    console.log("Is New Input From Agenda:", isNewInputFromAgendaJS); // Debugging
 
     // Fungsi utama untuk memuat detail agenda (Nomor, Perihal, Jam) berdasarkan Tanggal yang dipilih
     async function loadAgendaDetailsAndPopulateDropdown() {
@@ -495,35 +534,24 @@ include '../includes/header.php';
 
         fetchedAgendas = []; // Reset data agendas yang sudah di-fetch
 
-        // BARU: Jika dalam mode edit dengan peserta, isi langsung dari nilai PHP
+        // BARU: Jika ini mode edit dengan peserta, isi langsung dari nilai PHP
+        // Logika untuk isNewInputFromAgendaJS TIDAK lagi ada di sini,
+        // karena itu akan memungkinkan AJAX
         if (isEditModeWithParticipantsJS) {
             console.log("Mode Edit dengan Peserta: Memulihkan detail agenda dari nilai PHP.");
             
-            // Tetap tampilkan opsi yang sudah terpilih dari PHP
             nomorAgendaDropdown.innerHTML = '<option value="' + "<?php echo htmlspecialchars($nomor_agenda_form_selected_id); ?>" + '" selected>' + "<?php echo htmlspecialchars($nomor_agenda_form_text); ?>" + '</option>';
-            nomorAgendaDropdown.disabled = true; // Pastikan tetap disabled
+            nomorAgendaDropdown.disabled = true;
 
-            // BUAT OBJEK AGENDA BUATAN dan masukan ke fetchedAgendas
-            // Ini agar populatePerihalAndJam bisa menemukan data saat mencari
-            fetchedAgendas.push({
-                id: "<?php echo htmlspecialchars($nomor_agenda_form_selected_id); ?>",
-                nomor_undangan: "<?php echo htmlspecialchars($nomor_agenda_form_text); ?>",
-                perihal: "<?php echo htmlspecialchars($perihal_agenda_form); ?>",
-                jam: "<?php echo htmlspecialchars($waktu_mulai_form); ?>"
-            });
-
-            // Isi field-field lainnya juga dari nilai PHP yang ada (seharusnya sudah diisi populatePerihalAndJam() )
-            // perihalAgendaInput.value = "<?php // echo htmlspecialchars($perihal_agenda_form); ?>";
-            // waktuMulaiInput.value = "<?php // echo htmlspecialchars($waktu_mulai_form); ?>";
-            // idAgendaSelectedHidden.value = "<?php // echo htmlspecialchars($nomor_agenda_form_selected_id); ?>";
-            // nomorAgendaDisplayTextHidden.value = "<?php // echo htmlspecialchars($nomor_agenda_form_text); ?>";
-
-            // PENTING: Panggil populatePerihalAndJam() di sini setelah fetchedAgendas diisi
-            populatePerihalAndJam();
-
+            perihalAgendaInput.value = "<?php echo htmlspecialchars($perihal_agenda_form); ?>";
+            waktuMulaiInput.value = "<?php echo htmlspecialchars($waktu_mulai_form); ?>";
+            idAgendaSelectedHidden.value = "<?php echo htmlspecialchars($nomor_agenda_form_selected_id); ?>";
+            nomorAgendaDisplayTextHidden.value = "<?php echo htmlspecialchars($nomor_agenda_form_text); ?>";
+            
             return; // Hentikan fungsi karena tidak perlu AJAX atau pemrosesan lebih lanjut
         }
 
+        // Ini adalah bagian yang akan berjalan untuk input baru biasa DAN input baru dari agenda
         if (selectedDate) {
             try {
                 console.log("Mengirim AJAX request ke get_agenda_details.php untuk detail agenda...");
@@ -554,19 +582,17 @@ include '../includes/header.php';
                         option.textContent = agenda.nomor_undangan;
                         nomorAgendaDropdown.appendChild(option);
                     });
-                    nomorAgendaDropdown.disabled = false;
+                    nomorAgendaDropdown.disabled = false; // Aktifkan dropdown
                 } else {
                     nomorAgendaDropdown.innerHTML = '<option value="">-- Tidak ada agenda untuk tanggal ini --</option>';
                 }
 
                 // Setelah dropdown terisi, coba pre-select jika ada nilai dari PHP (mode edit atau validasi gagal)
-                const phpSelectedAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>";
-                const phpSelectedDate = "<?php echo $tanggal_agenda_form; ?>";
-
-                if (phpSelectedAgendaId && phpSelectedDate === selectedDate) {
-                    if (nomorAgendaDropdown.querySelector(`option[value="${phpSelectedAgendaId}"]`)) {
-                        nomorAgendaDropdown.value = phpSelectedAgendaId;
-                        populatePerihalAndJam();
+                // Ini akan bekerja untuk input baru dari agenda dan validasi gagal.
+                if (initialSelectedAgendaId && initialSelectedDate === selectedDate) {
+                    if (nomorAgendaDropdown.querySelector(`option[value="${initialSelectedAgendaId}"]`)) {
+                        nomorAgendaDropdown.value = initialSelectedAgendaId;
+                        populatePerihalAndJam(); // Isi Perihal dan Jam Mulai
                     }
                 }
 
@@ -628,19 +654,18 @@ include '../includes/header.php';
     // Saat halaman pertama kali dimuat (DOMContentLoaded)
     document.addEventListener('DOMContentLoaded', () => {
         console.log("DOMContentLoaded event fired.");
-        const initialSelectedDate = "<?php echo $tanggal_agenda_form; ?>";
-        const initialSelectedAgendaId = "<?php echo $nomor_agenda_form_selected_id; ?>";
+        // initialSelectedDate dan initialSelectedAgendaId sudah didefinisikan di awal script
         
         // Jika ada tanggal yang sudah terpilih dari PHP (mode edit atau validasi gagal)
-        if (initialSelectedDate) {
+        // ATAU jika ini mode input baru dari agenda
+        if (initialSelectedDate) { // initialSelectedDate akan terisi di kedua skenario ini
             tanggalAgendaDropdown.value = initialSelectedDate;
             console.log("Tanggal sudah terpilih saat DOMContentLoaded. Memuat detail agenda dan mencoba pre-select...");
             
             // Panggil fungsi untuk memuat agenda, dan setelah selesai (then),
             // coba pre-select Nomor Agenda dan isi Perihal/Jam Mulai
             loadAgendaDetailsAndPopulateDropdown().then(() => {
-                // Setelah dropdown nomor agenda diisi oleh AJAX,
-                // barulah kita bisa mencoba memilih nilai awal jika ada
+                // Hanya pre-select dan populate jika initialSelectedAgendaId ada (berarti ada agenda spesifik yang dipilih)
                 if (initialSelectedAgendaId && nomorAgendaDropdown.querySelector(`option[value="${initialSelectedAgendaId}"]`)) {
                     nomorAgendaDropdown.value = initialSelectedAgendaId;
                     populatePerihalAndJam(); // Isi Perihal dan Jam Mulai
